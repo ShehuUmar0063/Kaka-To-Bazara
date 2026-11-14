@@ -16,6 +16,23 @@
   <body class="bg-[#FAF8F5] text-[#1C241F] antialiased selection:bg-[#1B4332]/15 selection:text-[#1B4332]">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      window.setTimeout(function () {
+        var root = document.getElementById('root');
+        if (root && !root.hasChildNodes()) {
+          root.innerHTML =
+            '<div style="max-width:520px;margin:64px auto;padding:24px;background:#fff;border:1px solid #E5E0D5;border-radius:16px;font-family:system-ui,sans-serif;color:#1C241F;line-height:1.5">' +
+            '<h1 style="margin:0 0 8px;font-size:20px;color:#1B4332">Kaka-to-Bazara</h1>' +
+            '<p style="margin:0 0 12px;font-size:14px;color:#525E56">The app bundle did not load. If you deployed this repository on GitHub Pages, make sure Pages is built via GitHub Actions rather than serving the raw source branch.</p>' +
+            '<ol style="margin:0;padding-left:20px;font-size:14px;color:#1C241F">' +
+            '<li>Open your GitHub repository <strong>Settings &rarr; Pages</strong>.</li>' +
+            '<li>Under <strong>Build and deployment &rarr; Source</strong>, choose <strong>GitHub Actions</strong>.</li>' +
+            '<li>Re-run the <strong>Deploy to GitHub Pages</strong> workflow under the <strong>Actions</strong> tab.</li>' +
+            '</ol>' +
+            '</div>';
+        }
+      }, 2500);
+    </script>
   </body>
 </html>
 
