@@ -7,8 +7,9 @@ import { defineConfig } from 'vite';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ command }) => {
+  const prodBase = process.env.VITE_BASE_PATH || (process.env.VERCEL ? '/' : './');
   return {
-    base: command === 'build' ? process.env.VITE_BASE_PATH || './' : '/',
+    base: command === 'build' ? prodBase : '/',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

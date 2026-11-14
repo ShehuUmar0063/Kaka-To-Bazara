@@ -71,18 +71,26 @@ NODE_ENV=production npm start
 
 ## Launching Directly from GitHub
 
-You can launch this project straight from GitHub in two ways:
+You can deploy this repository straight from GitHub in multiple ways:
 
-### Option A: GitHub Pages (Static Frontend — Zero Server Setup)
+### Option A: Vercel (Recommended — Full-Stack Frontend + `/api` Serverless Functions)
+This repository includes `vercel.json` and Vercel Serverless Functions under `api/` (`/api/health`, `/api/nasa-power`, `/api/advisor/analyze`, `/api/advisor/chat`):
+1. Push your code to GitHub.
+2. Go to [vercel.com/new](https://vercel.com/new) and import your GitHub repository.
+3. Under **Environment Variables**, add:
+   - `GEMINI_API_KEY` = your Gemini API key
+4. Click **Deploy** (Vercel automatically detects Vite + `vercel.json` and runs `npm run build`).
+
+### Option B: GitHub Pages (Static Frontend — Zero Server Setup)
 This repository includes a ready-to-use GitHub Actions workflow at `.github/workflows/deploy-pages.yml`.
-1. Push this repository to GitHub (`main` branch).
+1. Push this repository to GitHub (`main` or `master` branch).
 2. Go to **Settings → Pages → Build and deployment → Source** and select **GitHub Actions**.
-3. On your next push to `main` (or by clicking **Run workflow** in the Actions tab), GitHub will build `dist/` and publish the live app automatically.
+3. On your next push (or by clicking **Run workflow** in the Actions tab), GitHub will build `dist/` and publish the live app automatically.
 
 > **How it works on GitHub Pages:** NASA POWER supports browser CORS directly, so live satellite soil moisture, SRTM 30m elevation, Leaflet Esri imagery, and NASA GIBS MODIS/SMAP layers all work live on GitHub Pages. When no Node.js backend is present, the crop analyzer and advisor automatically switch to built-in FAO GAEZ + NASA residual-moisture rules so every button keeps working smoothly.
 
-### Option B: Full-Stack Deployment (Render, Railway, Cloud Run, or Docker)
-Deploy the full Express + Gemini AI backend directly from your GitHub repository:
+### Option C: Render, Railway, Cloud Run, or Docker
+Deploy the Express + Gemini AI backend directly from your GitHub repository:
 - **Render**: Connect your GitHub repo using the included `render.yaml` Blueprint and set `GEMINI_API_KEY` in Environment Variables.
 - **Docker**: Build and run using the included `Dockerfile`:
   ```bash
@@ -98,13 +106,15 @@ Deploy the full Express + Gemini AI backend directly from your GitHub repository
 ├── .github/
 │   ├── ISSUE_TEMPLATE/        # Bug & feature request templates
 │   └── workflows/             # CI build check & GitHub Pages deployment
+├── api/                       # Vercel serverless API routes (/api/*)
 ├── src/
 │   ├── components/            # Map, Farm Analyzer, Charts, Modals, AI Sheet
 │   ├── data/                  # 11 Gombe LGAs, NASA parsers, 4-language packs, static fallback
 │   ├── types/                 # TypeScript interfaces
 │   ├── App.tsx                # Main application state & telemetry orchestration
 │   └── main.tsx
-├── server.ts                  # Express server, NASA POWER proxy, Gemini AI routes
+├── server.ts                  # Express server for local dev, Docker & Render
+├── vercel.json                # Vercel build & SPA rewrite configuration
 ├── Dockerfile                 # Production container build
 ├── render.yaml                # Render Blueprint config
 ├── LICENSE                    # MIT License
