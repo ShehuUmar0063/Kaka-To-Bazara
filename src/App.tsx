@@ -10,6 +10,7 @@ import {
 } from './data/gombeData';
 import { TRANSLATIONS } from './data/translations';
 import { FARM_INPUTS_COPY } from './data/farmInputsTranslations';
+import { buildStaticChatReply, buildStaticFarmAnalysis } from './data/staticFallback';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { FarmSatelliteMap } from './components/FarmSatelliteMap';
@@ -111,12 +112,31 @@ export default function App() {
         })
         .catch(() => lga.defaultElevationM);
 
+      const directPowerUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=PRECTOTCORR,T2M_MAX,GWETROOT,EVPTRNS&community=AG&longitude=${lon.toFixed(
+        4
+      )}&latitude=${lat.toFixed(4)}&start=20250901&end=20251110&format=JSON`;
+
       const powerPromise = fetch(
         `/api/nasa-power?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`,
         { signal }
       )
-        .then(async (res) => (res.ok ? res.json() : null))
-        .catch(() => null);
+        .then(async (res) => {
+          const contentType = res.headers.get('content-type') || '';
+          if (res.ok && contentType.includes('application/json')) {
+            return res.json();
+          }
+          // Static hosting (e.g. GitHub Pages): NASA POWER supports browser CORS directly
+          const directRes = await fetch(directPowerUrl, { signal });
+          return directRes.ok ? directRes.json() : null;
+        })
+        .catch(async () => {
+          try {
+            const directRes = await fetch(directPowerUrl, { signal });
+            return directRes.ok ? directRes.json() : null;
+          } catch {
+            return null;
+          }
+        });
 
       try {
         const [elevResult, powerPayload] = await Promise.all([elevPromise, powerPromise]);
@@ -213,6 +233,23 @@ export default function App() {
         }),
       });
 
+      const contentType = res.headers.get('content-type') || '';
+      if (res.status === 404 || !contentType.includes('application/json')) {
+        // Static hosting fallback (e.g. GitHub Pages without Express backend)
+        const fallback = buildStaticFarmAnalysis(
+          language,
+          farmCopy,
+          plannedCrop,
+          soilKind,
+          farmSizeHa,
+          telemetry.viableDays,
+          telemetry.latestGwetrootPct
+        );
+        setAnalysisResult(fallback);
+        setIsAnalysisStale(false);
+        return;
+      }
+
       const data = await res.json();
       if (!res.ok || !data?.verdictBadge) {
         throw new Error(data?.error || 'Unable to check your farm crop right now.');
@@ -264,6 +301,22 @@ export default function App() {
           },
         }),
       });
+
+      const contentType = res.headers.get('content-type') || '';
+      if (res.status === 404 || !contentType.includes('application/json')) {
+        const staticReply = buildStaticChatReply(
+          language,
+          selectedLga.name,
+          telemetry.viableDays,
+          telemetry.latestGwetrootPct,
+          farmSizeHa
+        );
+        setChatMessages((prev) => [
+          ...prev,
+          { id: `m-${Date.now()}`, role: 'model', text: staticReply },
+        ]);
+        return;
+      }
 
       const data = await res.json();
       if (!res.ok || !data?.reply) {
