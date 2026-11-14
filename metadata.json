@@ -1,0 +1,6 @@
+{
+  "name": "Kaka-to-Bazara: Gombe Residual Moisture Relay Finder",
+  "description": "Farmer-centered residual soil moisture decision tool for Gombe State using NASA POWER telemetry, multilingual local extension guidance, and Gemini AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
