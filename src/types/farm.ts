@@ -82,3 +82,22 @@ export interface ChatMessage {
   text: string;
   error?: boolean;
 }
+
+export type AppTab = 'gombe' | 'nigeria';
+
+export interface NigeriaCropRegion {
+  stateName: string;
+  townBasin: string;
+  ecologicalZone: string;
+  lat: number;
+  lon: number;
+  whyItFits: string;
+}
+
+export interface NigeriaCropAnalysisResult {
+  cropName: string;
+  summary: string;
+  plantingWindow: string;
+  keyRisk: string;
+  topRegions: NigeriaCropRegion[];
+}

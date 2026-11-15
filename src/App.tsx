@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Menu, MapPin, Sparkles, Satellite } from 'lucide-react';
+import { Menu, MapPin, Sparkles, Satellite, Compass } from 'lucide-react';
 import {
   GOMBE_LGAS,
   SOIL_KIND_CAPACITY_MM,
@@ -10,17 +10,20 @@ import {
 } from './data/gombeData';
 import { TRANSLATIONS } from './data/translations';
 import { FARM_INPUTS_COPY } from './data/farmInputsTranslations';
+import { NIGERIA_FINDER_COPY } from './data/nigeriaCropData';
 import { buildStaticChatReply, buildStaticFarmAnalysis } from './data/staticFallback';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { FarmSatelliteMap } from './components/FarmSatelliteMap';
 import { FarmAnalyzerPanel } from './components/FarmAnalyzerPanel';
+import { NigeriaCropFinder } from './components/NigeriaCropFinder';
 import { WaterStatusCard } from './components/WaterStatusCard';
 import { SoilWaterChart } from './components/SoilWaterChart';
 import { RotationCards } from './components/RotationCards';
 import { NasaSourcesModal } from './components/NasaSourcesModal';
 import { AiAdvisorSheet } from './components/AiAdvisorSheet';
 import type {
+  AppTab,
   ChatMessage,
   FarmAnalysisResult,
   FarmTelemetry,
@@ -83,6 +86,7 @@ function formatNominatimPlace(data: NominatimResponse | null, fallbackName: stri
 
 export default function App() {
   const [hasStarted, setHasStarted] = useState(false);
+  const [activeTab, setActiveTab] = useState<AppTab>('gombe');
   const [language, setLanguage] = useState<Language>('en');
   const [simpleMode, setSimpleMode] = useState(true);
 
@@ -124,6 +128,7 @@ export default function App() {
 
   const t = TRANSLATIONS[language];
   const farmCopy = FARM_INPUTS_COPY[language];
+  const nigeriaCopy = NIGERIA_FINDER_COPY[language];
   const terrainClass = useMemo(() => classifyElevationTerrain(elevationM), [elevationM]);
 
   // Sync greeting when language changes if user hasn't sent messages yet
@@ -442,95 +447,138 @@ export default function App() {
 
           {/* Main Content */}
           <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 pt-3 pb-24 space-y-6">
-            {/* Simple 11-LGA Dropdown Location Picker */}
-            <div className="bg-white border border-[#E5E0D5] rounded-2xl p-4 sm:px-5 sm:py-4">
-              <label htmlFor="lga-select" className="flex items-center gap-2 text-xs font-semibold text-[#1B4332] mb-2">
-                <MapPin className="w-4 h-4 shrink-0" aria-hidden="true" />
-                <span>{t.lgaPickerLabel}</span>
-              </label>
-
-              <select
-                id="lga-select"
-                value={selectedLgaId}
-                onChange={(e) => handleSelectLga(e.target.value as GombeLgaId)}
-                className="w-full min-h-[44px] px-3.5 py-2.5 text-sm font-medium bg-[#FAF8F5] border border-[#D8D1C5] rounded-xl text-[#1C241F] focus:outline-none focus:border-[#1B4332] cursor-pointer"
+            {/* Simple 2-Tab Switcher: Gombe Farm Checker vs Nigeria Crop Finder */}
+            <div
+              role="tablist"
+              aria-label="App Sections"
+              className="grid grid-cols-2 gap-1.5 p-1.5 bg-white border border-[#E5E0D5] rounded-2xl"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'gombe'}
+                onClick={() => setActiveTab('gombe')}
+                className={`min-h-[46px] px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1B4332] ${
+                  activeTab === 'gombe'
+                    ? 'bg-[#1B4332] text-white shadow-xs'
+                    : 'text-[#525E56] hover:text-[#1C241F] hover:bg-[#FAF8F5]'
+                }`}
               >
-                {GOMBE_LGAS.map((lga) => (
-                  <option key={lga.id} value={lga.id}>
-                    {lga.name} ({lga.lat.toFixed(2)}, {lga.lon.toFixed(2)} - {lga.terrain})
-                  </option>
-                ))}
-              </select>
+                <MapPin className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">{nigeriaCopy.tabGombe}</span>
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'nigeria'}
+                onClick={() => setActiveTab('nigeria')}
+                className={`min-h-[46px] px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1B4332] ${
+                  activeTab === 'nigeria'
+                    ? 'bg-[#1B4332] text-white shadow-xs'
+                    : 'text-[#525E56] hover:text-[#1C241F] hover:bg-[#FAF8F5]'
+                }`}
+              >
+                <Compass className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">{nigeriaCopy.tabNigeria}</span>
+              </button>
             </div>
 
-            {/* Interactive Touch Satellite Map + Custom Farm Size */}
-            <FarmSatelliteMap
-              lat={pinLat}
-              lon={pinLon}
-              flyTrigger={flyTrigger}
-              farmSizeHa={farmSizeHa}
-              soilWetnessPct={telemetry.latestGwetrootPct}
-              elevationM={elevationM}
-              terrainClass={terrainClass}
-              isLoadingElevation={isLoadingElevation}
-              exactPlaceName={exactPlaceName}
-              isLoadingPlace={isLoadingPlace}
-              t={t}
-              farmCopy={farmCopy}
-              onPinChange={handlePinChange}
-              onFarmSizeChange={handleFarmSizeChange}
-            />
+            {activeTab === 'nigeria' ? (
+              <NigeriaCropFinder language={language} simpleMode={simpleMode} />
+            ) : (
+              <>
+                {/* Simple 11-LGA Dropdown Location Picker */}
+                <div className="bg-white border border-[#E5E0D5] rounded-2xl p-4 sm:px-5 sm:py-4">
+                  <label htmlFor="lga-select" className="flex items-center gap-2 text-xs font-semibold text-[#1B4332] mb-2">
+                    <MapPin className="w-4 h-4 shrink-0" aria-hidden="true" />
+                    <span>{t.lgaPickerLabel}</span>
+                  </label>
 
-            {/* Simple Farmer Inputs (Soil Type & Planned Crop) + Check If My Crop Will Work AI Summary */}
-            <FarmAnalyzerPanel
-              copy={farmCopy}
-              soilKind={soilKind}
-              plannedCrop={plannedCrop}
-              onChangeSoilKind={handleSoilKindChange}
-              onChangePlannedCrop={handlePlannedCropChange}
-              onAnalyze={handleAnalyzeFarm}
-              isAnalyzing={isAnalyzing}
-              analysis={analysisResult}
-              analysisError={analysisError}
-              isStale={isAnalysisStale}
-              farmDetails={{
-                lgaName: selectedLga.name,
-                exactPlaceName,
-                lat: pinLat,
-                lon: pinLon,
-                elevationM,
-                terrainLabel: t.terrainLabels[terrainClass],
-                farmSizeHa,
-                soilWetnessPct: telemetry.latestGwetrootPct,
-                viableDays: telemetry.viableDays,
-                dailyLossMm: telemetry.recentAvgLossMm,
-                maxTempC: telemetry.latestTempMaxC,
-                soilWaterLeftLabel: t.soilWaterLeftLabel,
-                daysUnit: t.daysUnit,
-                soilWetnessLabel: t.soilWetnessLabel,
-                soilVerdictText: telemetry.isViable ? t.verdictGood : t.verdictDry,
-              }}
-            />
+                  <select
+                    id="lga-select"
+                    value={selectedLgaId}
+                    onChange={(e) => handleSelectLga(e.target.value as GombeLgaId)}
+                    className="w-full min-h-[44px] px-3.5 py-2.5 text-sm font-medium bg-[#FAF8F5] border border-[#D8D1C5] rounded-xl text-[#1C241F] focus:outline-none focus:border-[#1B4332] cursor-pointer"
+                  >
+                    {GOMBE_LGAS.map((lga) => (
+                      <option key={lga.id} value={lga.id}>
+                        {lga.name} ({lga.lat.toFixed(2)}, {lga.lon.toFixed(2)} - {lga.terrain})
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            {/* Section 1: Water Status Card */}
-            <WaterStatusCard
-              telemetry={telemetry}
-              elevationM={elevationM}
-              terrainClass={terrainClass}
-              t={t}
-              isLoading={isLoadingTelemetry}
-            />
+                {/* Interactive Touch Satellite Map + Custom Farm Size */}
+                <FarmSatelliteMap
+                  lat={pinLat}
+                  lon={pinLon}
+                  flyTrigger={flyTrigger}
+                  farmSizeHa={farmSizeHa}
+                  soilWetnessPct={telemetry.latestGwetrootPct}
+                  elevationM={elevationM}
+                  terrainClass={terrainClass}
+                  isLoadingElevation={isLoadingElevation}
+                  exactPlaceName={exactPlaceName}
+                  isLoadingPlace={isLoadingPlace}
+                  t={t}
+                  farmCopy={farmCopy}
+                  onPinChange={handlePinChange}
+                  onFarmSizeChange={handleFarmSizeChange}
+                />
 
-            {/* Section 2: Simple Soil Water Chart */}
-            <SoilWaterChart
-              points={telemetry.points}
-              t={t}
-              simpleMode={simpleMode}
-              isLoading={isLoadingTelemetry}
-            />
+                {/* Simple Farmer Inputs (Soil Type & Planned Crop) + Check If My Crop Will Work AI Summary */}
+                <FarmAnalyzerPanel
+                  copy={farmCopy}
+                  soilKind={soilKind}
+                  plannedCrop={plannedCrop}
+                  onChangeSoilKind={handleSoilKindChange}
+                  onChangePlannedCrop={handlePlannedCropChange}
+                  onAnalyze={handleAnalyzeFarm}
+                  isAnalyzing={isAnalyzing}
+                  analysis={analysisResult}
+                  analysisError={analysisError}
+                  isStale={isAnalysisStale}
+                  farmDetails={{
+                    lgaName: selectedLga.name,
+                    exactPlaceName,
+                    lat: pinLat,
+                    lon: pinLon,
+                    elevationM,
+                    terrainLabel: t.terrainLabels[terrainClass],
+                    farmSizeHa,
+                    soilWetnessPct: telemetry.latestGwetrootPct,
+                    viableDays: telemetry.viableDays,
+                    dailyLossMm: telemetry.recentAvgLossMm,
+                    maxTempC: telemetry.latestTempMaxC,
+                    soilWaterLeftLabel: t.soilWaterLeftLabel,
+                    daysUnit: t.daysUnit,
+                    soilWetnessLabel: t.soilWetnessLabel,
+                    soilVerdictText: telemetry.isViable ? t.verdictGood : t.verdictDry,
+                  }}
+                />
 
-            {/* Section 3: 3 Crop Rotation Options (FAO GAEZ Calibrated) */}
-            <RotationCards t={t} simpleMode={simpleMode} isViable={telemetry.isViable} />
+                {/* Section 1: Water Status Card */}
+                <WaterStatusCard
+                  telemetry={telemetry}
+                  elevationM={elevationM}
+                  terrainClass={terrainClass}
+                  t={t}
+                  isLoading={isLoadingTelemetry}
+                />
+
+                {/* Section 2: Simple Soil Water Chart */}
+                <SoilWaterChart
+                  points={telemetry.points}
+                  t={t}
+                  simpleMode={simpleMode}
+                  isLoading={isLoadingTelemetry}
+                />
+
+                {/* Section 3: 3 Crop Rotation Options (FAO GAEZ Calibrated) */}
+                <RotationCards t={t} simpleMode={simpleMode} isViable={telemetry.isViable} />
+              </>
+            )}
 
             {/* Subtle Bottom NASA Data Badge */}
             <div className="pt-2 flex justify-center">

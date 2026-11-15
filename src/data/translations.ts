@@ -26,6 +26,12 @@ export interface TranslationPack {
   // Welcome Screen
   welcomeIntro: string;
   startExploring: string;
+  howItWorksTitle: string;
+  howItWorksSteps: {
+    stepLabel: string;
+    title: string;
+    description: string;
+  }[];
 
   // Settings Modal
   settingsTitle: string;
@@ -111,8 +117,29 @@ export const TRANSLATIONS: Record<Language, TranslationPack> = {
     appTitle: 'Kaka-to-Bazara',
 
     welcomeIntro:
-      'Find hidden soil water after harvest in Gombe State using NASA satellite data. Grow a bonus dry-season crop without fuel pumps.',
+      'Use NASA satellite soil moisture and climate data to discover hidden underground water after harvest, choose the right dry-season rotation crop, and find the best farming zones across Nigeria.',
     startExploring: 'Start Exploring',
+    howItWorksTitle: 'How It Works',
+    howItWorksSteps: [
+      {
+        stepLabel: 'Step 1',
+        title: 'Pick Your Farm or Crop',
+        description:
+          'Tap your exact farmland on the satellite map (with real town, village, and road names) or choose any crop you want to harvest across Nigeria.',
+      },
+      {
+        stepLabel: 'Step 2',
+        title: 'Check NASA Soil Water & Terrain',
+        description:
+          'See live NASA satellite root-zone moisture, rainfall, temperature, and 30m elevation for your exact plot.',
+      },
+      {
+        stepLabel: 'Step 3',
+        title: 'Get AI Crop & Rotation Advice',
+        description:
+          'Instantly see if your planned crop will succeed or fail, compare 3 smart rotation options, or ask the AI advisor in your local language.',
+      },
+    ],
 
     settingsTitle: 'Settings',
     languageLabel: 'Language',
@@ -274,8 +301,29 @@ export const TRANSLATIONS: Record<Language, TranslationPack> = {
     appTitle: 'Kaka-to-Bazara',
 
     welcomeIntro:
-      'Gano boyayyen damshin kasa bayan girbin Kaka a Jihar Gombe ta amfani da bayanan NASA. Yi shukar Bazara ba tare da famfon fetur ba.',
+      'Yi amfani da bayanan tauraron dan adam na NASA don gano boyayyen damshin kasa bayan girbi, zabar shukar rani mai riba, da gano wuraren noma mafi kyau a duk fadin Najeriya.',
     startExploring: 'Fara Bincike',
+    howItWorksTitle: 'Yadda Yake Aiki',
+    howItWorksSteps: [
+      {
+        stepLabel: 'Mataki na 1',
+        title: 'Zabi Gonarka ko Shuka',
+        description:
+          'Danna ainihin gonarka a taswirar sama (tare da sunayen garuruwa, kauyuka, da hanyoyi) ko ka zabi kowace shuka a fadin Najeriya.',
+      },
+      {
+        stepLabel: 'Mataki na 2',
+        title: 'Duba Damshin NASA da Tsayin Kasa',
+        description:
+          'Ga yawan damshin kasa na NASA, ruwan sama, zafin rana, da tsayin kasa na mita 30 don ainihin gonarka.',
+      },
+      {
+        stepLabel: 'Mataki na 3',
+        title: 'Samu Shawarar AI da Zabin Shuka',
+        description:
+          'Gano nan take ko shukarka za ta yi nasara, kwatanta zabin shuka guda 3, ko ka tambayi AI da harshenka.',
+      },
+    ],
 
     settingsTitle: 'Saituna',
     languageLabel: 'Harshe',
@@ -437,8 +485,29 @@ export const TRANSLATIONS: Record<Language, TranslationPack> = {
     appTitle: 'Kaka-to-Bazara',
 
     welcomeIntro:
-      'Yiit ndiyam leydi keddiɗam caggal Nduungu e Gombe e ballal limtooji NASA. Aaw gawri Ceedu tawa a huutoraaki pompi.',
+      'Huutoro limtooji satelit NASA ngam yiitde ndiyam leydi keddiɗam caggal koƴgol, suɓaade aawdi Ceedu moƴƴiri, e yiytude nokkuuje demal ɓurɗe moƴƴude e nder Naajeeriya fof.',
     startExploring: 'Fuɗɗo Yiylaade',
+    howItWorksTitle: 'No Huutortee',
+    howItWorksSteps: [
+      {
+        stepLabel: 'Daawe 1',
+        title: 'Suɓo Ngesa Maa walla Aawdi',
+        description:
+          'Ñoƴƴu ngesa maa tigi e kartal satelit (tawa ina waɗi inɗe gure e laabi) walla suɓo kala aawdi e nder Naajeeriya.',
+      },
+      {
+        stepLabel: 'Daawe 2',
+        title: 'Ƴeew Ndiyam Leydi NASA e Tooweendi',
+        description:
+          'Yiy limto ndiyam leydi NASA, toɓo, nguleeki, e tooweendi meeter 30 e nokku ngesa maa tigi.',
+      },
+      {
+        stepLabel: 'Daawe 3',
+        title: 'Heɓ Ballal AI & Peeje Aawdi',
+        description:
+          'Yiy jooni so aawdi maa ina moƴƴa, yerondir peeje 3, walla ƴam balloowo AI e ɗemngal maa.',
+      },
+    ],
 
     settingsTitle: 'Teelte',
     languageLabel: 'Ɗemngal',
@@ -600,8 +669,29 @@ export const TRANSLATIONS: Record<Language, TranslationPack> = {
     appTitle: 'Kaka-to-Bazara',
 
     welcomeIntro:
-      'Find hidden soil water after harvest for Gombe State using NASA satellite data. Grow extra dry-season crop without fuel pump.',
+      'Use NASA satellite soil water and weather data to find hidden underground water after harvest, pick the right dry-season crop, and check the best farming places across Nigeria.',
     startExploring: 'Start Exploring',
+    howItWorksTitle: 'How E Dey Work',
+    howItWorksSteps: [
+      {
+        stepLabel: 'Step 1',
+        title: 'Pick Your Farm or Crop',
+        description:
+          'Tap your exact farm for satellite map (with real town, village, and road names) or pick any crop you wan harvest anywhere for Nigeria.',
+      },
+      {
+        stepLabel: 'Step 2',
+        title: 'Check NASA Soil Water & Ground',
+        description:
+          'See live NASA soil water, rainfall, heat, and 30m ground height for your exact farm spot.',
+      },
+      {
+        stepLabel: 'Step 3',
+        title: 'Get AI Crop & Rotation Advice',
+        description:
+          'Quickly see if your crop go survive or fail, compare 3 smart crop options, or ask the AI advisor for your own language.',
+      },
+    ],
 
     settingsTitle: 'Settings',
     languageLabel: 'Language',
