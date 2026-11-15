@@ -60,6 +60,7 @@ export interface TranslationPack {
   opacityLabel: string;
   zoomPlotBtn: string;
   zoomRegionBtn: string;
+  exactPlaceLabel: string;
 
   // Section 1: Water Status Card
   soilWaterLeftLabel: string;
@@ -146,6 +147,7 @@ export const TRANSLATIONS: Record<Language, TranslationPack> = {
     opacityLabel: 'Overlay Opacity',
     zoomPlotBtn: 'Farm Zoom',
     zoomRegionBtn: 'Gombe View',
+    exactPlaceLabel: 'Exact Place',
 
     soilWaterLeftLabel: 'Soil Water Left',
     daysUnit: 'Days',
@@ -308,6 +310,7 @@ export const TRANSLATIONS: Record<Language, TranslationPack> = {
     opacityLabel: 'Hasken Taswira',
     zoomPlotBtn: 'Kusanto Gona',
     zoomRegionBtn: 'Dubi Gombe',
+    exactPlaceLabel: 'Takamaimai Wuri',
 
     soilWaterLeftLabel: 'Kwanakin Damshi',
     daysUnit: 'Kwana',
@@ -470,6 +473,7 @@ export const TRANSLATIONS: Record<Language, TranslationPack> = {
     opacityLabel: 'Laaɓal Kartal',
     zoomPlotBtn: 'Ngesa',
     zoomRegionBtn: 'Gombe Fof',
+    exactPlaceLabel: 'Nokku Tigi',
 
     soilWaterLeftLabel: 'Balɗe Ndiyam',
     daysUnit: 'Balɗe',
@@ -632,6 +636,7 @@ export const TRANSLATIONS: Record<Language, TranslationPack> = {
     opacityLabel: 'Overlay Opacity',
     zoomPlotBtn: 'Farm Zoom',
     zoomRegionBtn: 'Gombe View',
+    exactPlaceLabel: 'Exact Place',
 
     soilWaterLeftLabel: 'Soil Water Left',
     daysUnit: 'Days',

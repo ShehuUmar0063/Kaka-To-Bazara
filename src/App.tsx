@@ -30,6 +30,57 @@ import type {
   SoilKindId,
 } from './types/farm';
 
+interface NominatimResponse {
+  name?: string;
+  display_name?: string;
+  address?: {
+    road?: string;
+    neighbourhood?: string;
+    suburb?: string;
+    quarter?: string;
+    village?: string;
+    hamlet?: string;
+    town?: string;
+    city?: string;
+    county?: string;
+    state_district?: string;
+    state?: string;
+  };
+}
+
+function formatNominatimPlace(data: NominatimResponse | null, fallbackName: string): string {
+  if (!data) return fallbackName;
+  const addr = data.address ?? {};
+  const candidates = [
+    data.name,
+    addr.road,
+    addr.neighbourhood || addr.suburb || addr.quarter,
+    addr.village || addr.hamlet || addr.town || addr.city,
+    addr.county || addr.state_district,
+    addr.state,
+  ];
+  const unique: string[] = [];
+  for (const raw of candidates) {
+    const clean = typeof raw === 'string' ? raw.trim() : '';
+    if (!clean) continue;
+    if (!unique.some((existing) => existing.toLowerCase() === clean.toLowerCase())) {
+      unique.push(clean);
+    }
+  }
+  if (unique.length > 0) {
+    return unique.slice(0, 3).join(', ');
+  }
+  if (typeof data.display_name === 'string' && data.display_name.trim()) {
+    return data.display_name
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s && s.toLowerCase() !== 'nigeria')
+      .slice(0, 3)
+      .join(', ');
+  }
+  return fallbackName;
+}
+
 export default function App() {
   const [hasStarted, setHasStarted] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
@@ -48,6 +99,9 @@ export default function App() {
 
   const [elevationM, setElevationM] = useState<number>(selectedLga.defaultElevationM);
   const [isLoadingElevation, setIsLoadingElevation] = useState<boolean>(false);
+
+  const [exactPlaceName, setExactPlaceName] = useState<string>(`${selectedLga.name}, Gombe`);
+  const [isLoadingPlace, setIsLoadingPlace] = useState<boolean>(false);
 
   const [telemetry, setTelemetry] = useState<FarmTelemetry>(() =>
     buildBaselineTelemetry(getLgaById('yamaltu_deba'))
@@ -92,8 +146,10 @@ export default function App() {
     ) => {
       const lga = getLgaById(lgaId);
       const baseCapacityMm = SOIL_KIND_CAPACITY_MM[activeSoilKind];
+      const fallbackPlace = `${lga.name}, Gombe`;
       setIsLoadingTelemetry(true);
       setIsLoadingElevation(true);
+      setIsLoadingPlace(true);
 
       let resolvedElevation = lga.defaultElevationM;
       const elevPromise = fetch(
@@ -111,6 +167,28 @@ export default function App() {
             : lga.defaultElevationM;
         })
         .catch(() => lga.defaultElevationM);
+
+      // Reverse geocode exact tapped spot with OpenStreetMap Nominatim (no API key required)
+      fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(
+          lat.toFixed(5)
+        )}&lon=${encodeURIComponent(lon.toFixed(5))}`,
+        { signal, headers: { Accept: 'application/json' } }
+      )
+        .then(async (res) => {
+          if (!res.ok) return null;
+          return (await res.json()) as NominatimResponse;
+        })
+        .then((data) => {
+          if (signal?.aborted) return;
+          setExactPlaceName(formatNominatimPlace(data, fallbackPlace));
+          setIsLoadingPlace(false);
+        })
+        .catch((err) => {
+          if (err instanceof Error && err.name === 'AbortError') return;
+          setExactPlaceName(fallbackPlace);
+          setIsLoadingPlace(false);
+        });
 
       const directPowerUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=PRECTOTCORR,T2M_MAX,GWETROOT,EVPTRNS&community=AG&longitude=${lon.toFixed(
         4
@@ -217,6 +295,7 @@ export default function App() {
         body: JSON.stringify({
           language,
           lgaName: selectedLga.name,
+          exactPlaceName,
           lat: pinLat,
           lon: pinLon,
           elevationM,
@@ -286,6 +365,7 @@ export default function App() {
             language,
             simpleMode,
             lgaName: selectedLga.name,
+            exactPlaceName,
             terrain: selectedLga.terrain,
             lat: pinLat,
             lon: pinLon,
@@ -393,6 +473,8 @@ export default function App() {
               elevationM={elevationM}
               terrainClass={terrainClass}
               isLoadingElevation={isLoadingElevation}
+              exactPlaceName={exactPlaceName}
+              isLoadingPlace={isLoadingPlace}
               t={t}
               farmCopy={farmCopy}
               onPinChange={handlePinChange}
@@ -413,6 +495,7 @@ export default function App() {
               isStale={isAnalysisStale}
               farmDetails={{
                 lgaName: selectedLga.name,
+                exactPlaceName,
                 lat: pinLat,
                 lon: pinLon,
                 elevationM,

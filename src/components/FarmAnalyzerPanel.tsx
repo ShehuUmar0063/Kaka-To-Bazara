@@ -5,6 +5,7 @@ import type { FarmAnalysisResult, PlannedCropId, SoilKindId } from '../types/far
 
 export interface FarmShareDetails {
   lgaName: string;
+  exactPlaceName?: string;
   lat: number;
   lon: number;
   elevationM: number;
@@ -66,7 +67,9 @@ function buildShareSummaryText(
     `${copy.shareSummaryVerdict}: ${analysis.verdictBadge}`,
     analysis.why,
     '',
-    `${copy.shareSummaryLocation}: ${details.lgaName} (${details.lat.toFixed(5)}°N, ${details.lon.toFixed(5)}°E · ${details.elevationM}m ${details.terrainLabel})`,
+    `${copy.shareSummaryLocation}: ${
+      details.exactPlaceName ? `${details.exactPlaceName} (${details.lgaName})` : details.lgaName
+    } (${details.lat.toFixed(5)}°N, ${details.lon.toFixed(5)}°E · ${details.elevationM}m ${details.terrainLabel})`,
     `${copy.shareSummarySize}: ${details.farmSizeHa} ${copy.hectaresUnit}`,
     `${copy.shareSummarySoil}: ${copy.soilKinds[soilKind]}`,
     `${copy.shareSummaryCrop}: ${copy.plannedCrops[plannedCrop]}`,

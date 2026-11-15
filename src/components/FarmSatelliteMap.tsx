@@ -15,11 +15,19 @@ interface FarmSatelliteMapProps {
   elevationM: number;
   terrainClass: TerrainClass;
   isLoadingElevation: boolean;
+  exactPlaceName: string;
+  isLoadingPlace: boolean;
   t: TranslationPack;
   farmCopy: FarmInputsCopy;
   onPinChange: (nextLat: number, nextLon: number) => void;
   onFarmSizeChange: (nextHa: number) => void;
 }
+
+const ESRI_PLACES_URL =
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
+
+const ESRI_TRANSPORT_URL =
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}';
 
 const GIBS_MODIS_URL =
   'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_NDVI_8Day/default/2025-10-16/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png';
@@ -50,6 +58,8 @@ export function FarmSatelliteMap({
   elevationM,
   terrainClass,
   isLoadingElevation,
+  exactPlaceName,
+  isLoadingPlace,
   t,
   farmCopy,
   onPinChange,
@@ -87,6 +97,23 @@ export function FarmSatelliteMap({
         maxZoom: 19,
       }
     ).addTo(map);
+
+    // Hybrid place & road label pane placed above imagery and NASA GIBS overlays
+    const labelsPane = map.createPane('labelsPane');
+    labelsPane.style.zIndex = '450';
+    labelsPane.style.pointerEvents = 'none';
+
+    L.tileLayer(ESRI_TRANSPORT_URL, {
+      attribution: 'Roads &copy; Esri',
+      maxZoom: 19,
+      pane: 'labelsPane',
+    }).addTo(map);
+
+    L.tileLayer(ESRI_PLACES_URL, {
+      attribution: 'Places &copy; Esri',
+      maxZoom: 19,
+      pane: 'labelsPane',
+    }).addTo(map);
 
     const zonesLayer = L.layerGroup().addTo(map);
     const marker = L.marker([lat, lon], {
@@ -479,6 +506,13 @@ export function FarmSatelliteMap({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-[#525E56]">
           <span className="font-mono tabular-nums font-semibold text-[#1C241F]">
             {lat.toFixed(5)}°N, {lon.toFixed(5)}°E
+          </span>
+          <span aria-hidden="true">·</span>
+          <span className="font-medium text-[#1B4332]">
+            {t.exactPlaceLabel}:{' '}
+            <span className="font-semibold text-[#1C241F]">
+              {isLoadingPlace ? '…' : exactPlaceName}
+            </span>
           </span>
           <span aria-hidden="true">·</span>
           <span className="inline-flex items-center gap-1 font-mono tabular-nums font-medium text-[#1B4332]">

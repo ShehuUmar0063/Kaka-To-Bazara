@@ -47,9 +47,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     pcm: { yes: 'YES — Good to Plant', warn: 'WARNING — High Risk Make E Fail' },
   };
 
+  const exactLocationText = body.exactPlaceName
+    ? `${body.exactPlaceName} (${body.lgaName ?? 'Gombe'})`
+    : body.lgaName ?? 'Gombe';
+
   const prompt = [
     'Analyze this exact farm plot for planting right now after the rainy season:',
-    `- Location: ${body.lgaName ?? 'Gombe'} (Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)})`,
+    `- Exact Place & Location: ${exactLocationText} (Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)})`,
     `- Elevation & Slope: ${elevationM}m (${terrainLabel})`,
     `- Farm Size: ${farmSizeHa} Hectares`,
     `- Soil / Sand Kind: ${soilKindLabel}`,

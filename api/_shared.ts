@@ -17,6 +17,7 @@ export interface AdvisorContext {
   language: SupportedLanguage;
   simpleMode: boolean;
   lgaName: string;
+  exactPlaceName?: string;
   terrain: string;
   lat: number;
   lon: number;
@@ -34,6 +35,7 @@ export interface AdvisorContext {
 export interface AnalyzeRequestBody {
   language: SupportedLanguage;
   lgaName: string;
+  exactPlaceName?: string;
   lat: number;
   lon: number;
   elevationM: number;
@@ -115,6 +117,7 @@ export function buildAdvisorInstruction(ctx: AdvisorContext): string {
     '',
     'Current Farmer Plot & Live NASA + SRTM Data:',
     `- Nearest LGA: ${ctx.lgaName} (${ctx.terrain})`,
+    ...(ctx.exactPlaceName ? [`- Exact Tapped Place: ${ctx.exactPlaceName}`] : []),
     `- Exact Farm Pin: Lat ${ctx.lat.toFixed(4)}, Lon ${ctx.lon.toFixed(4)}`,
     `- Farm Size: ${ctx.farmSizeHa ?? 1} Hectares`,
     `- Sand / Soil Type: ${ctx.soilKindLabel ?? 'Mixed Loamy Soil'}`,

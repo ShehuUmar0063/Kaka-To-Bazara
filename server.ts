@@ -16,6 +16,7 @@ interface AdvisorContext {
   language: 'en' | 'ha' | 'ff' | 'pcm';
   simpleMode: boolean;
   lgaName: string;
+  exactPlaceName?: string;
   terrain: string;
   lat: number;
   lon: number;
@@ -33,6 +34,7 @@ interface AdvisorContext {
 interface AnalyzeRequestBody {
   language: 'en' | 'ha' | 'ff' | 'pcm';
   lgaName: string;
+  exactPlaceName?: string;
   lat: number;
   lon: number;
   elevationM: number;
@@ -72,6 +74,7 @@ function buildAdvisorInstruction(ctx: AdvisorContext): string {
     '',
     'Current Farmer Plot & Live NASA + SRTM Data:',
     `- Nearest LGA: ${ctx.lgaName} (${ctx.terrain})`,
+    ...(ctx.exactPlaceName ? [`- Exact Tapped Place: ${ctx.exactPlaceName}`] : []),
     `- Exact Farm Pin: Lat ${ctx.lat.toFixed(4)}, Lon ${ctx.lon.toFixed(4)}`,
     `- Farm Size: ${ctx.farmSizeHa ?? 1} Hectares`,
     `- Sand / Soil Type: ${ctx.soilKindLabel ?? 'Mixed Loamy Soil'}`,
@@ -188,9 +191,13 @@ app.post('/api/advisor/analyze', async (req: Request, res: Response) => {
     pcm: { yes: 'YES — Good to Plant', warn: 'WARNING — High Risk Make E Fail' },
   };
 
+  const exactLocationText = body.exactPlaceName
+    ? `${body.exactPlaceName} (${body.lgaName ?? 'Gombe'})`
+    : body.lgaName ?? 'Gombe';
+
   const prompt = [
     'Analyze this exact farm plot for planting right now after the rainy season:',
-    `- Location: ${body.lgaName ?? 'Gombe'} (Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)})`,
+    `- Exact Place & Location: ${exactLocationText} (Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)})`,
     `- Elevation & Slope: ${elevationM}m (${terrainLabel})`,
     `- Farm Size: ${farmSizeHa} Hectares`,
     `- Soil / Sand Kind: ${soilKindLabel}`,
