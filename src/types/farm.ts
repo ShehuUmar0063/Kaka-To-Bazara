@@ -101,3 +101,37 @@ export interface NigeriaCropAnalysisResult {
   keyRisk: string;
   topRegions: NigeriaCropRegion[];
 }
+
+export type PlantingCalendarPhase =
+  | 'land_prep'
+  | 'rain_plant'
+  | 'rain_grow'
+  | 'rain_harvest'
+  | 'dry_plant'
+  | 'dry_harvest'
+  | 'off_season';
+
+export interface PlantingCalendarMonth {
+  month: string;
+  phase: PlantingCalendarPhase;
+  rainLevel: 'dry' | 'light' | 'moderate' | 'heavy';
+  note: string;
+}
+
+export interface PlantingCalendarResult {
+  cropName: string;
+  locationName: string;
+  rainySeasonSummary: string;
+  rainFedWindow: {
+    plantMonths: string;
+    harvestMonths: string;
+    tip: string;
+  };
+  drySeasonWindow: {
+    plantMonths: string;
+    harvestMonths: string;
+    tip: string;
+    isRecommended: boolean;
+  };
+  months: PlantingCalendarMonth[];
+}

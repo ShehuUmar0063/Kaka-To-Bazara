@@ -4,6 +4,8 @@ import 'leaflet/dist/leaflet.css';
 import {
   AlertTriangle,
   CalendarDays,
+  CloudDrizzle,
+  CloudRain,
   Compass,
   Droplets,
   ExternalLink,
@@ -15,8 +17,10 @@ import {
 } from 'lucide-react';
 import {
   NIGERIAN_CROP_PRESETS,
+  NIGERIA_CALENDAR_LOCATIONS,
   NIGERIA_FINDER_COPY,
   buildStaticNigeriaCropResult,
+  buildStaticPlantingCalendar,
 } from '../data/nigeriaCropData';
 import { parseNasaPowerPayload } from '../data/gombeData';
 import type {
@@ -24,6 +28,8 @@ import type {
   MapLayerMode,
   NigeriaCropAnalysisResult,
   NigeriaCropRegion,
+  PlantingCalendarPhase,
+  PlantingCalendarResult,
 } from '../types/farm';
 
 interface NigeriaCropFinderProps {
@@ -38,6 +44,8 @@ interface RegionTelemetry {
   elevationM: number;
   source: 'live' | 'baseline';
 }
+
+type FinderSubTab = 'places' | 'calendar';
 
 const ESRI_PLACES_URL =
   'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
@@ -62,19 +70,46 @@ function createPinIcon() {
   });
 }
 
+function getPhaseCardClasses(phase: PlantingCalendarPhase): string {
+  switch (phase) {
+    case 'rain_plant':
+      return 'bg-[#DCFCE7] border-[#86EFAC] text-[#14532D]';
+    case 'dry_plant':
+      return 'bg-[#E0F2FE] border-[#7DD3FC] text-[#0C4A6E]';
+    case 'rain_harvest':
+    case 'dry_harvest':
+      return 'bg-[#FEF3C7] border-[#FCD34D] text-[#78350F]';
+    case 'rain_grow':
+      return 'bg-[#F0FDF4] border-[#BBF7D0] text-[#1C241F]';
+    case 'land_prep':
+      return 'bg-[#FAF8F5] border-[#D8D1C5] text-[#1C241F]';
+    default:
+      return 'bg-[#FAF8F5] border-[#E5E0D5] text-[#525E56]';
+  }
+}
+
 export function NigeriaCropFinder({ language, simpleMode }: NigeriaCropFinderProps) {
   const copy = NIGERIA_FINDER_COPY[language];
 
+  const [subTab, setSubTab] = useState<FinderSubTab>('places');
   const [selectedPresetId, setSelectedPresetId] = useState<string>('cowpea');
   const [customCrop, setCustomCrop] = useState<string>('');
+
+  // Best Farming Places state
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [result, setResult] = useState<NigeriaCropAnalysisResult | null>(null);
-
   const [selectedRegionIdx, setSelectedRegionIdx] = useState<number>(0);
   const [regionTelemetry, setRegionTelemetry] = useState<RegionTelemetry | null>(null);
   const [isLoadingRegionNasa, setIsLoadingRegionNasa] = useState<boolean>(false);
   const [layerMode, setLayerMode] = useState<MapLayerMode>('aerial');
+
+  // Planting Calendar state
+  const [calendarLocationId, setCalendarLocationId] = useState<string>('gombe');
+  const [customCalendarLocation, setCustomCalendarLocation] = useState<string>('');
+  const [isLoadingCalendar, setIsLoadingCalendar] = useState<boolean>(false);
+  const [calendarError, setCalendarError] = useState<string | null>(null);
+  const [calendarResult, setCalendarResult] = useState<PlantingCalendarResult | null>(null);
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -88,6 +123,11 @@ export function NigeriaCropFinder({ language, simpleMode }: NigeriaCropFinderPro
     customCrop.trim() ||
     NIGERIAN_CROP_PRESETS.find((c) => c.id === selectedPresetId)?.labels[language] ||
     '60-Day Cowpea / Beans';
+
+  const activeCalendarLocation =
+    customCalendarLocation.trim() ||
+    NIGERIA_CALENDAR_LOCATIONS.find((l) => l.id === calendarLocationId)?.name ||
+    'Gombe (Dadinkowa / Akko)';
 
   const handleFindRegions = async () => {
     setIsSearching(true);
@@ -124,6 +164,54 @@ export function NigeriaCropFinder({ language, simpleMode }: NigeriaCropFinderPro
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleBuildCalendar = async () => {
+    setIsLoadingCalendar(true);
+    setCalendarError(null);
+
+    try {
+      const res = await fetch('/api/advisor/planting-calendar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          language,
+          simpleMode,
+          cropName: activeCropName,
+          locationName: activeCalendarLocation,
+        }),
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      if (res.status === 404 || !contentType.includes('application/json')) {
+        const fallback = buildStaticPlantingCalendar(
+          activeCropName,
+          activeCalendarLocation,
+          language
+        );
+        setCalendarResult(fallback);
+        return;
+      }
+
+      const data = await res.json();
+      if (!res.ok || !Array.isArray(data?.months) || data.months.length === 0) {
+        throw new Error(data?.error || 'Unable to generate planting calendar right now.');
+      }
+
+      setCalendarResult(data as PlantingCalendarResult);
+    } catch (err) {
+      setCalendarError(err instanceof Error ? err.message : 'Connection error while building calendar.');
+    } finally {
+      setIsLoadingCalendar(false);
+    }
+  };
+
+  // Sync selected region into Calendar custom location when switching into Calendar sub-tab
+  const handleSelectSubTab = (next: FinderSubTab) => {
+    if (next === 'calendar' && selectedRegion && !customCalendarLocation.trim()) {
+      setCustomCalendarLocation(`${selectedRegion.stateName} (${selectedRegion.townBasin})`);
+    }
+    setSubTab(next);
   };
 
   // Fetch live NASA POWER + SRTM Elevation whenever user selects one of the recommended state cards
@@ -192,7 +280,6 @@ export function NigeriaCropFinder({ language, simpleMode }: NigeriaCropFinderPro
           }
         }
 
-        // Clean latitude-adjusted baseline if NASA POWER is temporarily unreachable
         const southernBonus = Math.max(0, Math.round((11 - lat) * 5));
         const wetnessPct = Math.min(82, Math.max(38, 50 + southernBonus));
         setRegionTelemetry({
@@ -212,8 +299,18 @@ export function NigeriaCropFinder({ language, simpleMode }: NigeriaCropFinderPro
     return () => controller.abort();
   }, [selectedRegion]);
 
-  // Initialize / fly Leaflet hybrid satellite map for selected state region
+  // Initialize / fly / cleanup Leaflet hybrid satellite map when Best Farming Places tab is active
   useEffect(() => {
+    if (subTab !== 'places') {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        markerRef.current = null;
+        gibsLayerRef.current = null;
+      }
+      return;
+    }
+
     if (!selectedRegion || !mapContainerRef.current) return;
 
     if (!mapRef.current) {
@@ -265,7 +362,7 @@ export function NigeriaCropFinder({ language, simpleMode }: NigeriaCropFinderPro
     mapRef.current.flyTo([selectedRegion.lat, selectedRegion.lon], layerMode === 'aerial' ? 13 : 8, {
       duration: 0.9,
     });
-  }, [selectedRegion]);
+  }, [selectedRegion, subTab]);
 
   // Cleanup map on unmount
   useEffect(() => {
@@ -282,7 +379,7 @@ export function NigeriaCropFinder({ language, simpleMode }: NigeriaCropFinderPro
   // Sync NASA GIBS overlay toggle on regional map
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || subTab !== 'places') return;
 
     if (gibsLayerRef.current) {
       map.removeLayer(gibsLayerRef.current);
@@ -310,7 +407,7 @@ export function NigeriaCropFinder({ language, simpleMode }: NigeriaCropFinderPro
     } else if (selectedRegion) {
       map.flyTo([selectedRegion.lat, selectedRegion.lon], 13, { duration: 0.7 });
     }
-  }, [layerMode]);
+  }, [layerMode, subTab]);
 
   const googleMapsUrl = selectedRegion
     ? `https://www.google.com/maps/@?api=1&map_action=map&center=${selectedRegion.lat.toFixed(
@@ -320,7 +417,7 @@ export function NigeriaCropFinder({ language, simpleMode }: NigeriaCropFinderPro
 
   return (
     <div className="space-y-6">
-      {/* 1. Crop Selector & Custom Input Card */}
+      {/* Shared Crop Selector & Sub-Tab Switcher */}
       <section className="bg-white border border-[#E5E0D5] rounded-2xl p-4 sm:p-6 space-y-4">
         <div>
           <h1 className="font-display text-xl sm:text-2xl font-bold text-[#1C241F] flex items-center gap-2.5">
@@ -368,26 +465,124 @@ export function NigeriaCropFinder({ language, simpleMode }: NigeriaCropFinderPro
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleFindRegions}
-          disabled={isSearching}
-          className="w-full min-h-[52px] px-6 py-3 rounded-xl bg-[#1B4332] text-white text-sm sm:text-base font-semibold hover:bg-[#143326] active:scale-[0.99] disabled:opacity-60 transition-all flex items-center justify-center gap-2.5 shadow-sm cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1B4332]"
+        {/* Sub-Tab Switcher: Best Farming Places vs Planting Calendar */}
+        <div
+          role="tablist"
+          aria-label="Nigeria Crop Finder Modes"
+          className="grid grid-cols-2 gap-1.5 p-1 bg-[#FAF8F5] border border-[#E5E0D5] rounded-xl"
         >
-          <Sparkles className={`w-5 h-5 shrink-0 ${isSearching ? 'animate-pulse' : ''}`} aria-hidden="true" />
-          <span>{isSearching ? copy.findingBtn : copy.findBtn}</span>
-        </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={subTab === 'places'}
+            onClick={() => handleSelectSubTab('places')}
+            className={`min-h-[42px] px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer ${
+              subTab === 'places'
+                ? 'bg-[#1B4332] text-white shadow-xs'
+                : 'text-[#525E56] hover:text-[#1C241F]'
+            }`}
+          >
+            <MapPin className="w-4 h-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">{copy.subTabPlaces}</span>
+          </button>
 
-        {searchError && (
-          <div className="p-3.5 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-xs sm:text-sm text-[#9A3412] flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
-            <span>{searchError}</span>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={subTab === 'calendar'}
+            onClick={() => handleSelectSubTab('calendar')}
+            className={`min-h-[42px] px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer ${
+              subTab === 'calendar'
+                ? 'bg-[#1B4332] text-white shadow-xs'
+                : 'text-[#525E56] hover:text-[#1C241F]'
+            }`}
+          >
+            <CalendarDays className="w-4 h-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">{copy.subTabCalendar}</span>
+          </button>
+        </div>
+
+        {subTab === 'places' ? (
+          <>
+            <button
+              type="button"
+              onClick={handleFindRegions}
+              disabled={isSearching}
+              className="w-full min-h-[52px] px-6 py-3 rounded-xl bg-[#1B4332] text-white text-sm sm:text-base font-semibold hover:bg-[#143326] active:scale-[0.99] disabled:opacity-60 transition-all flex items-center justify-center gap-2.5 shadow-sm cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1B4332]"
+            >
+              <Sparkles className={`w-5 h-5 shrink-0 ${isSearching ? 'animate-pulse' : ''}`} aria-hidden="true" />
+              <span>{isSearching ? copy.findingBtn : copy.findBtn}</span>
+            </button>
+
+            {searchError && (
+              <div className="p-3.5 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-xs sm:text-sm text-[#9A3412] flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span>{searchError}</span>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="space-y-4 pt-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="calendar-location-select" className="flex items-center gap-2 text-xs font-semibold text-[#1B4332] mb-2">
+                  <MapPin className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  <span>{copy.calendarLocationLabel}</span>
+                </label>
+                <select
+                  id="calendar-location-select"
+                  value={calendarLocationId}
+                  onChange={(e) => {
+                    setCalendarLocationId(e.target.value);
+                    setCustomCalendarLocation('');
+                  }}
+                  className="w-full min-h-[46px] px-3.5 py-2.5 text-sm font-medium bg-[#FAF8F5] border border-[#D8D1C5] rounded-xl text-[#1C241F] focus:outline-none focus:border-[#1B4332] cursor-pointer"
+                >
+                  {NIGERIA_CALENDAR_LOCATIONS.map((loc) => (
+                    <option key={loc.id} value={loc.id}>
+                      {loc.name} — {loc.zone}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="calendar-custom-location" className="block text-xs font-semibold text-[#1B4332] mb-2">
+                  {copy.calendarCustomLocationLabel}
+                </label>
+                <input
+                  id="calendar-custom-location"
+                  type="text"
+                  value={customCalendarLocation}
+                  onChange={(e) => setCustomCalendarLocation(e.target.value)}
+                  placeholder={copy.calendarCustomLocationPlaceholder}
+                  className="w-full min-h-[46px] px-3.5 py-2.5 text-sm bg-[#FAF8F5] border border-[#D8D1C5] rounded-xl text-[#1C241F] placeholder:text-[#7A847D] focus:outline-none focus:border-[#1B4332]"
+                />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleBuildCalendar}
+              disabled={isLoadingCalendar}
+              className="w-full min-h-[52px] px-6 py-3 rounded-xl bg-[#1B4332] text-white text-sm sm:text-base font-semibold hover:bg-[#143326] active:scale-[0.99] disabled:opacity-60 transition-all flex items-center justify-center gap-2.5 shadow-sm cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1B4332]"
+            >
+              <CalendarDays className={`w-5 h-5 shrink-0 ${isLoadingCalendar ? 'animate-pulse' : ''}`} aria-hidden="true" />
+              <span>{isLoadingCalendar ? copy.calendarBuildingBtn : copy.calendarBuildBtn}</span>
+            </button>
+
+            {calendarError && (
+              <div className="p-3.5 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-xs sm:text-sm text-[#9A3412] flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span>{calendarError}</span>
+              </div>
+            )}
           </div>
         )}
       </section>
 
-      {/* 2. AI Nationwide Breakdown & Top 4 States */}
-      {result && (
+      {/* TAB 1 CONTENT: Best Farming Places */}
+      {subTab === 'places' && result && (
         <>
           <section className="bg-white border border-[#E5E0D5] rounded-2xl p-5 sm:p-6 space-y-5">
             <div>
@@ -475,7 +670,7 @@ export function NigeriaCropFinder({ language, simpleMode }: NigeriaCropFinderPro
             </div>
           </section>
 
-          {/* 3. Live NASA Check & Hybrid Satellite Inspector for Selected State */}
+          {/* Live NASA Check & Hybrid Satellite Inspector for Selected State */}
           {selectedRegion && (
             <section className="bg-white border border-[#E5E0D5] rounded-2xl p-4 sm:p-5 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -518,7 +713,6 @@ export function NigeriaCropFinder({ language, simpleMode }: NigeriaCropFinderPro
                 </div>
               </div>
 
-              {/* Live NASA POWER + SRTM Stats Row */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#E5E0D5]">
                   <div className="flex items-center gap-1.5 text-[11px] font-medium text-[#525E56]">
@@ -563,7 +757,6 @@ export function NigeriaCropFinder({ language, simpleMode }: NigeriaCropFinderPro
                 </div>
               </div>
 
-              {/* Satellite Map Viewport */}
               <div className="relative rounded-xl overflow-hidden border border-[#D8D1C5] h-[270px] sm:h-[320px] w-full bg-[#1C241F]">
                 <div ref={mapContainerRef} className="w-full h-full z-10" />
               </div>
@@ -582,6 +775,121 @@ export function NigeriaCropFinder({ language, simpleMode }: NigeriaCropFinderPro
             </section>
           )}
         </>
+      )}
+
+      {/* TAB 2 CONTENT: 12-Month AI Planting Calendar */}
+      {subTab === 'calendar' && calendarResult && (
+        <section className="bg-white border border-[#E5E0D5] rounded-2xl p-5 sm:p-6 space-y-5">
+          <div>
+            <h2 className="text-lg font-semibold text-[#1C241F]">
+              {calendarResult.cropName} — {calendarResult.locationName}
+            </h2>
+            <p className="text-xs font-semibold text-[#1B4332] mt-2">
+              {copy.calendarRainySummaryLabel}
+            </p>
+            <p className="text-sm text-[#525E56] leading-relaxed mt-0.5">
+              {calendarResult.rainySeasonSummary}
+            </p>
+          </div>
+
+          {/* Ideal Rain-Fed vs Dry-Season Windows */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="p-4 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0] space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[#1B4332]">
+                <CloudRain className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span>{copy.calendarRainFedTitle}</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-4 text-xs text-[#1C241F]">
+                <span>
+                  <strong className="text-[#1B4332]">{copy.calendarPlantLabel}:</strong>{' '}
+                  {calendarResult.rainFedWindow.plantMonths}
+                </span>
+                <span>
+                  <strong className="text-[#B45309]">{copy.calendarHarvestLabel}:</strong>{' '}
+                  {calendarResult.rainFedWindow.harvestMonths}
+                </span>
+              </div>
+              <p className="text-xs text-[#525E56] leading-relaxed">
+                {calendarResult.rainFedWindow.tip}
+              </p>
+            </div>
+
+            <div
+              className={`p-4 rounded-xl border space-y-2 ${
+                calendarResult.drySeasonWindow.isRecommended
+                  ? 'bg-[#F0F9FF] border-[#BAE6FD]'
+                  : 'bg-[#FAF8F5] border-[#E5E0D5]'
+              }`}
+            >
+              <div className="flex items-center gap-2 text-xs font-semibold text-[#0C4A6E]">
+                <Droplets className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span>{copy.calendarDrySeasonTitle}</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-4 text-xs text-[#1C241F]">
+                <span>
+                  <strong className="text-[#0C4A6E]">{copy.calendarPlantLabel}:</strong>{' '}
+                  {calendarResult.drySeasonWindow.plantMonths}
+                </span>
+                <span>
+                  <strong className="text-[#B45309]">{copy.calendarHarvestLabel}:</strong>{' '}
+                  {calendarResult.drySeasonWindow.harvestMonths}
+                </span>
+              </div>
+              <p className="text-xs text-[#525E56] leading-relaxed">
+                {calendarResult.drySeasonWindow.tip}
+              </p>
+            </div>
+          </div>
+
+          {/* Color Legend */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[#525E56]">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-xs bg-[#DCFCE7] border border-[#86EFAC]" aria-hidden="true" />
+              <span>{copy.calendarLegendRainPlant}</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-xs bg-[#E0F2FE] border border-[#7DD3FC]" aria-hidden="true" />
+              <span>{copy.calendarLegendDryPlant}</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-xs bg-[#FEF3C7] border border-[#FCD34D]" aria-hidden="true" />
+              <span>{copy.calendarLegendHarvest}</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-xs bg-[#FAF8F5] border border-[#D8D1C5]" aria-hidden="true" />
+              <span>{copy.calendarLegendGrowRest}</span>
+            </span>
+          </div>
+
+          {/* 12-Month Visual Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+            {calendarResult.months.slice(0, 12).map((item) => {
+              const RainIcon =
+                item.rainLevel === 'heavy'
+                  ? CloudRain
+                  : item.rainLevel === 'light' || item.rainLevel === 'moderate'
+                  ? CloudDrizzle
+                  : Sun;
+              return (
+                <div
+                  key={item.month}
+                  className={`p-3 rounded-xl border flex flex-col justify-between gap-2 ${getPhaseCardClasses(
+                    item.phase
+                  )}`}
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-sm font-bold">{item.month}</span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium opacity-80">
+                      <RainIcon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                      <span>{copy.calendarRainLevels[item.rainLevel]}</span>
+                    </span>
+                  </div>
+                  <p className="text-xs font-medium leading-snug">{item.note}</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
     </div>
   );

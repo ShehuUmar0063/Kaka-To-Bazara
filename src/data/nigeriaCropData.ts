@@ -1,4 +1,8 @@
-import type { Language, NigeriaCropAnalysisResult } from '../types/farm';
+import type {
+  Language,
+  NigeriaCropAnalysisResult,
+  PlantingCalendarResult,
+} from '../types/farm';
 
 export interface NigerianCropPreset {
   id: string;
@@ -159,14 +163,56 @@ export interface NigeriaFinderCopy {
   layerAerial: string;
   layerModis: string;
   layerSmap: string;
+  subTabPlaces: string;
+  subTabCalendar: string;
+  calendarLocationLabel: string;
+  calendarCustomLocationLabel: string;
+  calendarCustomLocationPlaceholder: string;
+  calendarBuildBtn: string;
+  calendarBuildingBtn: string;
+  calendarRainySummaryLabel: string;
+  calendarRainFedTitle: string;
+  calendarDrySeasonTitle: string;
+  calendarPlantLabel: string;
+  calendarHarvestLabel: string;
+  calendarLegendRainPlant: string;
+  calendarLegendDryPlant: string;
+  calendarLegendHarvest: string;
+  calendarLegendGrowRest: string;
+  calendarRainLevels: Record<'dry' | 'light' | 'moderate' | 'heavy', string>;
 }
+
+export interface NigeriaLocationPreset {
+  id: string;
+  name: string;
+  zone: string;
+  rainMonths: [number, number]; // 1-indexed start & end of rainy season
+}
+
+export const NIGERIA_CALENDAR_LOCATIONS: NigeriaLocationPreset[] = [
+  { id: 'gombe', name: 'Gombe (Dadinkowa / Akko)', zone: 'Sudan-Guinea Transition & Fadama', rainMonths: [5, 10] },
+  { id: 'kano', name: 'Kano (Kadawa / Kano Basin)', zone: 'Sudan Savanna', rainMonths: [6, 9] },
+  { id: 'kaduna', name: 'Kaduna (Zaria / Kafanchan)', zone: 'Northern Guinea Savanna', rainMonths: [5, 10] },
+  { id: 'jigawa', name: "Jigawa (Hadejia-Jama'are)", zone: 'Sudan Savanna Fadama', rainMonths: [6, 9] },
+  { id: 'sokoto', name: 'Sokoto (Goronyo / Rima Basin)', zone: 'Sahel-Sudan Fadama', rainMonths: [6, 9] },
+  { id: 'kebbi', name: 'Kebbi (Argungu / Birnin Kebbi)', zone: 'Sokoto-Rima Floodplain', rainMonths: [6, 9] },
+  { id: 'zamfara', name: 'Zamfara (Bakolori / Talata Mafara)', zone: 'Sudan Savanna', rainMonths: [6, 9] },
+  { id: 'benue', name: 'Benue (Makurdi / Gboko Valley)', zone: 'Southern Guinea Savanna', rainMonths: [4, 10] },
+  { id: 'plateau', name: 'Plateau (Jos South / Pankshin)', zone: 'Mid-Altitude Plateau', rainMonths: [4, 10] },
+  { id: 'nasarawa', name: 'Nasarawa (Lafia / Doma Basin)', zone: 'Guinea Savanna', rainMonths: [4, 10] },
+  { id: 'niger', name: 'Niger (Bida / Mokwa)', zone: 'Southern Guinea Savanna', rainMonths: [5, 10] },
+  { id: 'adamawa', name: 'Adamawa (Yola / Numan Basin)', zone: 'Benue-Gongola Valley', rainMonths: [5, 10] },
+  { id: 'ondo', name: 'Ondo (Akure / Idanre)', zone: 'Tropical Rainforest', rainMonths: [3, 11] },
+  { id: 'oyo', name: 'Oyo (Ibadan / Ogbomoso)', zone: 'Derived Savanna & Forest', rainMonths: [3, 11] },
+  { id: 'enugu', name: 'Enugu (Nsukka / Adani Basin)', zone: 'Derived Savanna & Rainforest', rainMonths: [3, 11] },
+];
 
 export const NIGERIA_FINDER_COPY: Record<Language, NigeriaFinderCopy> = {
   en: {
     tabGombe: 'My Farm Checker',
     tabNigeria: 'Nigeria Crop Finder',
     title: 'Nigeria Crop Finder',
-    subtitle: 'Pick any crop to see the best states, planting windows, and live NASA satellite soil conditions across Nigeria.',
+    subtitle: 'Pick any crop to see the best states, planting calendar, and live NASA satellite soil conditions across Nigeria.',
     presetLabel: 'Choose a Nigerian Crop',
     customLabel: 'Or Type Any Crop Name',
     customPlaceholder: 'e.g. Watermelon, Sweet Potato, Tiger Nut…',
@@ -187,12 +233,34 @@ export const NIGERIA_FINDER_COPY: Record<Language, NigeriaFinderCopy> = {
     layerAerial: 'Hybrid Satellite',
     layerModis: 'NASA MODIS',
     layerSmap: 'NASA SMAP',
+    subTabPlaces: 'Best Farming Places',
+    subTabCalendar: 'Planting Calendar',
+    calendarLocationLabel: 'Choose State / Farming Location',
+    calendarCustomLocationLabel: 'Or Type Town / State',
+    calendarCustomLocationPlaceholder: 'e.g. Bauchi, Taraba, Kwara…',
+    calendarBuildBtn: 'Generate AI Planting Calendar',
+    calendarBuildingBtn: 'Building month-by-month calendar…',
+    calendarRainySummaryLabel: 'Typical Rainy Season Pattern',
+    calendarRainFedTitle: 'Rain-Fed Season',
+    calendarDrySeasonTitle: 'Dry-Season / Fadama Residual',
+    calendarPlantLabel: 'Plant',
+    calendarHarvestLabel: 'Harvest',
+    calendarLegendRainPlant: 'Rain-Fed Planting',
+    calendarLegendDryPlant: 'Dry / Fadama Planting',
+    calendarLegendHarvest: 'Harvest Window',
+    calendarLegendGrowRest: 'Growing / Prep / Rest',
+    calendarRainLevels: {
+      dry: 'Dry',
+      light: 'Light Rain',
+      moderate: 'Steady Rain',
+      heavy: 'Peak Rain',
+    },
   },
   ha: {
     tabGombe: 'Binciken Gonata',
     tabNigeria: 'Neman Wurin Noma a Najeriya',
     title: 'Neman Wurin Noma a Najeriya',
-    subtitle: 'Zabi kowane irin amfani don ganin jihohin da suka fi dacewa, lokacin shuka, da halin danshin kasa na tauraron dan adam na NASA.',
+    subtitle: 'Zabi kowane irin amfani don ganin jihohin da suka fi dacewa, kalandar shuka, da halin danshin kasa na NASA.',
     presetLabel: 'Zabi Irin Shukar Najeriya',
     customLabel: 'Ko Rubuta Sunan Wata Shuka',
     customPlaceholder: 'Misali: Kankana, Dankali, Aya…',
@@ -213,12 +281,34 @@ export const NIGERIA_FINDER_COPY: Record<Language, NigeriaFinderCopy> = {
     layerAerial: 'Taswirar Sama',
     layerModis: 'NASA MODIS',
     layerSmap: 'NASA SMAP',
+    subTabPlaces: 'Mafi Kyawun Wuraren Noma',
+    subTabCalendar: 'Kalandar Shuka',
+    calendarLocationLabel: 'Zabi Jiha / Wurin Noma',
+    calendarCustomLocationLabel: 'Ko Rubuta Gari / Jiha',
+    calendarCustomLocationPlaceholder: 'Misali: Bauchi, Taraba, Katsina…',
+    calendarBuildBtn: 'Fitar da Kalandar Shuka ta AI',
+    calendarBuildingBtn: 'Ana tsara kalandar watanni 12…',
+    calendarRainySummaryLabel: 'Tsarin Damina a Wannan Wuri',
+    calendarRainFedTitle: 'Lokacin Damina',
+    calendarDrySeasonTitle: 'Lokacin Rani / Fadama',
+    calendarPlantLabel: 'Shuka',
+    calendarHarvestLabel: 'Girbi',
+    calendarLegendRainPlant: 'Shukar Damina',
+    calendarLegendDryPlant: 'Shukar Rani / Fadama',
+    calendarLegendHarvest: 'Lokacin Girbi',
+    calendarLegendGrowRest: 'Girma / Shiri / Hutu',
+    calendarRainLevels: {
+      dry: 'Rani',
+      light: 'Karamin Ruwa',
+      moderate: 'Ruwa Sosai',
+      heavy: 'Kololuwar Ruwa',
+    },
   },
   ff: {
     tabGombe: 'Ɓeto Ngesa Am',
     tabNigeria: 'Yiylagol Nokku Demal Naajeeriya',
     title: 'Yiylagol Nokku Demal Naajeeriya',
-    subtitle: 'Suɓo kala aawdi ngam yiyde diiwanuuji ɓurɗi moƴƴude, sahaa aawgol, e ngonka ndiyam leydi NASA e nder Naajeeriya.',
+    subtitle: 'Suɓo kala aawdi ngam yiyde diiwanuuji ɓurɗi moƴƴude, limlebbi aawgol, e ngonka ndiyam leydi NASA.',
     presetLabel: 'Suɓo Aawdi Naajeeriya',
     customLabel: 'Walla Winndu Innde Aawdi Goɗɗi',
     customPlaceholder: 'Yeru: Dende, Kudaku, Aya…',
@@ -239,12 +329,34 @@ export const NIGERIA_FINDER_COPY: Record<Language, NigeriaFinderCopy> = {
     layerAerial: 'Foto Satelit',
     layerModis: 'NASA MODIS',
     layerSmap: 'NASA SMAP',
+    subTabPlaces: 'Nokkuuje Ɓurɗe Moƴƴude',
+    subTabCalendar: 'Limlebbi Aawgol',
+    calendarLocationLabel: 'Suɓo Diiwal / Nokku',
+    calendarCustomLocationLabel: 'Walla Winndu Wuro / Diiwal',
+    calendarCustomLocationPlaceholder: 'Yeru: Bauchi, Taraba, Adamawa…',
+    calendarBuildBtn: 'Feewnu Limlebbi Aawgol AI',
+    calendarBuildingBtn: 'Ina feewna limlebbi lebbi 12…',
+    calendarRainySummaryLabel: 'Ngonka Nduungu e Nokku Oo',
+    calendarRainFedTitle: 'Sahaa Nduungu',
+    calendarDrySeasonTitle: 'Sahaa Ceedu / Fadama',
+    calendarPlantLabel: 'Aawgol',
+    calendarHarvestLabel: 'Koƴgol',
+    calendarLegendRainPlant: 'Aawgol Nduungu',
+    calendarLegendDryPlant: 'Aawgol Ceedu / Fadama',
+    calendarLegendHarvest: 'Sahaa Koƴgol',
+    calendarLegendGrowRest: 'Mawnugol / Heɓlude',
+    calendarRainLevels: {
+      dry: 'Ceedu',
+      light: 'Toɓo Seɗa',
+      moderate: 'Toɓo Moƴƴo',
+      heavy: 'Toɓo Mawngo',
+    },
   },
   pcm: {
     tabGombe: 'My Farm Checker',
     tabNigeria: 'Nigeria Crop Finder',
     title: 'Nigeria Crop Finder',
-    subtitle: 'Pick any crop wey you wan harvest to see the best states for Nigeria, best planting time, and live NASA soil water.',
+    subtitle: 'Pick any crop wey you wan harvest to see the best states for Nigeria, planting calendar, and live NASA soil water.',
     presetLabel: 'Pick Nigerian Crop',
     customLabel: 'Or Type Any Crop Name',
     customPlaceholder: 'e.g. Watermelon, Sweet Potato, Tiger Nut…',
@@ -265,6 +377,28 @@ export const NIGERIA_FINDER_COPY: Record<Language, NigeriaFinderCopy> = {
     layerAerial: 'Hybrid Satellite',
     layerModis: 'NASA MODIS',
     layerSmap: 'NASA SMAP',
+    subTabPlaces: 'Best Farming Places',
+    subTabCalendar: 'Planting Calendar',
+    calendarLocationLabel: 'Pick State / Farming Area',
+    calendarCustomLocationLabel: 'Or Type Town / State',
+    calendarCustomLocationPlaceholder: 'e.g. Bauchi, Taraba, Kwara…',
+    calendarBuildBtn: 'Make AI Planting Calendar',
+    calendarBuildingBtn: 'Dey arrange 12-month calendar…',
+    calendarRainySummaryLabel: 'Normal Rainy Season Pattern',
+    calendarRainFedTitle: 'Rainy Season Farming',
+    calendarDrySeasonTitle: 'Dry-Season / Fadama Farming',
+    calendarPlantLabel: 'Plant',
+    calendarHarvestLabel: 'Harvest',
+    calendarLegendRainPlant: 'Rainy Planting',
+    calendarLegendDryPlant: 'Dry / Fadama Planting',
+    calendarLegendHarvest: 'Harvest Time',
+    calendarLegendGrowRest: 'Growing / Prep / Rest',
+    calendarRainLevels: {
+      dry: 'Dry',
+      light: 'Small Rain',
+      moderate: 'Steady Rain',
+      heavy: 'Heavy Rain',
+    },
   },
 };
 
@@ -445,5 +579,71 @@ export function buildStaticNigeriaCropResult(
         whyItFits: 'Mild daytime temperatures reduce moisture evaporation and boost grain and vegetable quality.',
       },
     ],
+  };
+}
+
+export function buildStaticPlantingCalendar(
+  cropName: string,
+  locationName: string,
+  language: Language
+): PlantingCalendarResult {
+  const lowerLoc = locationName.toLowerCase();
+  const isSouthern =
+    lowerLoc.includes('ondo') ||
+    lowerLoc.includes('oyo') ||
+    lowerLoc.includes('enugu') ||
+    lowerLoc.includes('benue');
+
+  const rainStart = isSouthern ? 4 : 6;
+  const rainEnd = isSouthern ? 10 : 9;
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  const months = monthNames.map((m, i) => {
+    const idx = i + 1;
+    if (idx === rainStart - 1) {
+      return { month: m, phase: 'land_prep' as const, rainLevel: 'light' as const, note: 'Clear & prepare ridges' };
+    }
+    if (idx === rainStart) {
+      return { month: m, phase: 'rain_plant' as const, rainLevel: 'moderate' as const, note: 'Ideal rain-fed planting' };
+    }
+    if (idx > rainStart && idx < rainEnd) {
+      return {
+        month: m,
+        phase: 'rain_grow' as const,
+        rainLevel: idx === rainEnd - 1 ? ('heavy' as const) : ('moderate' as const),
+        note: 'Active growth & weeding',
+      };
+    }
+    if (idx === rainEnd) {
+      return { month: m, phase: 'rain_harvest' as const, rainLevel: 'light' as const, note: 'Harvest rain-fed crop' };
+    }
+    if (idx === rainEnd + 1) {
+      return { month: m, phase: 'dry_plant' as const, rainLevel: 'dry' as const, note: 'Fadama / residual planting' };
+    }
+    if (idx === 1 || idx === 2) {
+      return { month: m, phase: 'dry_harvest' as const, rainLevel: 'dry' as const, note: 'Dry-season harvest' };
+    }
+    return { month: m, phase: 'off_season' as const, rainLevel: 'dry' as const, note: 'Mulch & rest soil' };
+  });
+
+  return {
+    cropName,
+    locationName,
+    rainySeasonSummary:
+      language === 'ha'
+        ? `A yankin ${locationName}, ruwan sama yawanci yana fara sauka a watan ${monthNames[rainStart - 1]} kuma ya kare a ${monthNames[rainEnd - 1]}.`
+        : `In ${locationName}, steady rains typically run from ${monthNames[rainStart - 1]} to ${monthNames[rainEnd - 1]}, leaving residual Fadama moisture through ${monthNames[rainEnd]}.`,
+    rainFedWindow: {
+      plantMonths: `${monthNames[rainStart - 1]} – ${monthNames[rainStart]}`,
+      harvestMonths: `${monthNames[rainEnd - 1]} – ${monthNames[rainEnd]}`,
+      tip: 'Sow once the first two steady rains soak the top 15 cm of soil.',
+    },
+    drySeasonWindow: {
+      plantMonths: `${monthNames[rainEnd]} – ${monthNames[Math.min(11, rainEnd + 1)]}`,
+      harvestMonths: 'Jan – Feb',
+      tip: 'Best in lowland Fadama or deep clay basins that keep moisture after rains retreat.',
+      isRecommended: true,
+    },
+    months,
   };
 }
